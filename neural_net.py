@@ -68,6 +68,9 @@ class TwoLayerNet(object):
 
     # Compute the forward pass
     scores = None
+    hidden=np.maximum(0,X.dot(W1)+b1)
+    scores=hidden.dot(W2)+b2
+    
     #############################################################################
     # TODO: Perform the forward pass, computing the class scores for the input. #
     # Store the result in the scores variable, which should be an array of      #
@@ -82,9 +85,16 @@ class TwoLayerNet(object):
     if y is None:
       return scores
 
-    # Compute the loss
-    loss = None
-    #############################################################################
+    #Compute the loss
+      loss = None
+    shifted_scores=scores -np.max(scores,axis=1,keepdims =True)
+    exp_scores=np.exp(shifted_scores)
+    probs=exp_scores/np.sum(exp_scores,axis=1,keepdims=True)
+    N=X.shape[0]
+    data_loss=-np.sum(np.log(probs[np.arange(N),y]))/N 
+    lr=reg*(np.sum(W1*W1)+np.sum(W2*W2))
+    loss= data_loss+ lr
+    #     #############################################################################
     # TODO: Finish the forward pass, and compute the loss. This should include  #
     # both the data loss and L2 regularization for W1 and W2. Store the result  #
     # in the variable loss, which should be a scalar. Use the Softmax           #
@@ -96,7 +106,22 @@ class TwoLayerNet(object):
     #############################################################################
     
     # Backward pass: compute gradients
-    grads = {}
+    grads={}
+    dscores=probs.copy()
+    dscores(np.arange(N),y)-=1
+    dscores=dscores/N
+    dW2=hidden.T.dot(dscores)+2*reg*W2
+    db2=np.sum(dsores,axis=0)
+    dhidden[hidden<=0]=0
+    dW1=hidden.T.dot(dhidden)+2*reg*W1
+    db1=np.sum(dhidden,axis=0)
+    grads={}
+    grads['W1']=dW1
+    grads['b1']=db1
+    grads['W2']=dW2
+    grads['b2']=db2
+    return loss, grads
+
     #############################################################################
     # TODO: Compute the backward pass, computing the derivatives of the weights #
     # and biases. Store the results in the grads dictionary. For example,       #
@@ -107,7 +132,7 @@ class TwoLayerNet(object):
     #                              END OF YOUR CODE                             #
     #############################################################################
 
-    return loss, grads
+   
 
   def train(self, X, y, X_val, y_val,
             learning_rate=1e-3, learning_rate_decay=0.95,
